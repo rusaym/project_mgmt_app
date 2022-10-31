@@ -1,4 +1,3 @@
-// Mongoose models
 const Project = require('../models/Project')
 const Client = require('../models/Client')
 
@@ -90,10 +89,10 @@ const mutation = new GraphQLObjectType({
           email: args.email,
           phone: args.phone,
         })
+
         return client.save()
       },
     },
-
     // Delete a client
     deleteClient: {
       type: ClientType,
@@ -101,10 +100,15 @@ const mutation = new GraphQLObjectType({
         id: { type: GraphQLNonNull(GraphQLID) },
       },
       resolve(parent, args) {
+        Project.find({ clientId: args.id }).then((projects) => {
+          projects.forEach((project) => {
+            project.remove()
+          })
+        })
+
         return Client.findByIdAndRemove(args.id)
       },
     },
-
     // Add a project
     addProject: {
       type: ProjectType,
@@ -135,8 +139,7 @@ const mutation = new GraphQLObjectType({
         return project.save()
       },
     },
-
-    // Delete Project
+    // Delete a project
     deleteProject: {
       type: ProjectType,
       args: {
@@ -146,7 +149,6 @@ const mutation = new GraphQLObjectType({
         return Project.findByIdAndRemove(args.id)
       },
     },
-
     // Update a project
     updateProject: {
       type: ProjectType,

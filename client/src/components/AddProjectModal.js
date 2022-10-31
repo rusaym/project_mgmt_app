@@ -1,25 +1,38 @@
-import { useMutation, useQuery } from '@apollo/client'
 import { useState } from 'react'
 import { FaList } from 'react-icons/fa'
+import { useMutation, useQuery } from '@apollo/client'
+import { ADD_PROJECT } from '../mutations/projectMutations'
 import { GET_PROJECTS } from '../queries/projectQueries'
 import { GET_CLIENTS } from '../queries/clientQueries'
-import Spinner from './Spinner'
-import { LoneSchemaDefinitionRule } from 'graphql'
 
-export default function AddClientModal() {
+export default function AddProjectModal() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [clientId, setClientId] = useState('')
-  const [status, setStatus] = useState('')
+  const [status, setStatus] = useState('new')
+
+  const [addProject] = useMutation(ADD_PROJECT, {
+    variables: { name, description, clientId, status },
+    update(cache, { data: { addProject } }) {
+      const { projects } = cache.readQuery({ query: GET_PROJECTS })
+      cache.writeQuery({
+        query: GET_PROJECTS,
+        data: { projects: [...projects, addProject] },
+      })
+    },
+  })
 
   // Get Clients for select
   const { loading, error, data } = useQuery(GET_CLIENTS)
 
   const onSubmit = (e) => {
     e.preventDefault()
+
     if (name === '' || description === '' || status === '') {
       return alert('Please fill in all fields')
     }
+
+    addProject(name, description, clientId, status)
 
     setName('')
     setDescription('')
@@ -28,7 +41,7 @@ export default function AddClientModal() {
   }
 
   if (loading) return null
-  if (error) return <p>Something Went Wrong</p>
+  if (error) return 'Something Went Wrong'
 
   return (
     <>
@@ -55,9 +68,9 @@ export default function AddClientModal() {
             <div className='modal-dialog'>
               <div className='modal-content'>
                 <div className='modal-header'>
-                  <h1 className='modal-title fs-5' id='addProjectModalLabel'>
+                  <h5 className='modal-title' id='addProjectModalLabel'>
                     New Project
-                  </h1>
+                  </h5>
                   <button
                     type='button'
                     className='btn-close'
@@ -110,15 +123,13 @@ export default function AddClientModal() {
                       >
                         <option value=''>Select Client</option>
                         {data.clients.map((client) => (
-                          <option
-                            key={client.id}
-                            value={LoneSchemaDefinitionRule.id}
-                          >
+                          <option key={client.id} value={client.id}>
                             {client.name}
                           </option>
                         ))}
                       </select>
                     </div>
+
                     <button
                       type='submit'
                       data-bs-dismiss='modal'
